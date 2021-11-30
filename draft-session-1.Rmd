@@ -1,0 +1,39 @@
+---
+title: "Session 1"
+author: "Julian Flowers"
+date: "11/30/2021"
+output: powerpoint_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Outline
+
+-   What is R?
+-   Why bother?
+-   Prerequisites?
+-   Case studies
+
+## Data science
+
+-   Rise of data science
+
+## R journey
+
+-   Calculator
+
+-   Interactive mode
+
+-   Write a function
+
+-   Write a script
+
+-   Create a report
+
+-   Build a model
+
+-   Write a package
+
+-   Create software tools
