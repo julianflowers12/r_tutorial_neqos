@@ -1,0 +1,68 @@
+---
+title: "Proposal for NEQOS for R training"
+author: "Julian Flowers"
+date: "11/30/2021"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## My understanding of the brief
+
+-   NEQOS provides analytical services to a range of providers in the NE and elsewhere (including NICE)
+
+-   NEQOS has a small team of analysts largely working in Excel - some have R skills
+
+-   NEQOS would like to explore the use of R to see if it can help modernise and develop its output and service offer
+
+## Outline proposal 
+
+-   Following discussion with Paula Whitty and Paul Collingwood
+
+-   2 half-day sessions
+
+-   Session 1 outline
+
+    -   "Art of possible" - an interactive session (Q&A) with demonstration of R applications to common analytical problems including pitfalls.
+
+    -   This will be focussed on real-world application
+
+        -   What is R?
+
+        -   How is it used?
+
+        -   The 'R journey' from an analyst perspective
+
+        -   Examples / use cases
+
+            -   Wrangling spreadsheets
+
+            -   Creating visualisation
+
+        -   R ecosystems
+
+        -   Getting started
+
+            -   R and R Studio
+
+            -   Github
+
+        -   Learning materials
+
+-   Session 2 outline - "code along" - to be determined
+
+    -   Getting going
+
+    -   Undertake some analysis on a dataset
+
+    -   Create visualisation(s)
+
+    -   Create and report
+
+I estimate 1-2 days preparation for each session \~ 6 days work in all including session delivery.
+
+I have posted this outline at <https://github.com/julianflowers12/r_tutorial_neqos> and propose to use this site to add materials and tutorials
