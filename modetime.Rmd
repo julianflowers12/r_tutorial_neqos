@@ -1,0 +1,342 @@
+---
+title: "Forecasting COVID-19 test positivity"
+subtitle: "with `modeltime`"
+author: "Julian Flowers"
+date: "1/17/2022"
+output: 
+    html_document: 
+      toc: yes
+      toc_float: yes
+      code_folding: hide
+      keep_md: yes
+      highlight: pygments
+      theme: flatly
+      number_sections: yes
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+library(pacman)
+p_load(tidyverse, modeltime, tidymodels, timetk, parsnip, lubridate, mgcv)
+```
+
+# Introduction
+
+This document walks through time series modelling and forecasting with the `modeltime` R package which gives access to a wide range of time series models with easy tooling to fit, evaluate, forecast and visualisations.
+
+To illustrate its use we will use data from the [UK Covid19 Dashboard](https://coronavirus.data.gov.uk) for daily positivity rates in PCR tests.
+
+This blog is based on <https://www.business-science.io/code-tools/2020/06/29/introducing-modeltime.html>.
+
+## Getting the data
+
+The first step is to get the data. This can easily obtained from the dashboard API as a csv file.
+
+```{r get-data}
+
+df <- read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&areaCode=E92000001&metric=uniqueCasePositivityBySpecimenDateRollingSum&format=csv", show_col_types = F)
+
+df1 <- read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&areaCode=E92000001&metric=uniquePeopleTestedBySpecimenDateRollingSum&format=csv", show_col_types = F)
+
+head(df)
+
+```
+
+## Initial plot
+
+We can use the `plot_time_series` function to chart the data but first we'll reduce the dataset to date and value fields.
+
+```{r}
+
+library(cowplot)
+
+df <- df %>%
+  select(date, uniqueCasePositivityBySpecimenDateRollingSum) %>%
+  set_names(c("date", "value"))
+
+df1 <- df1 %>%
+  select(date, uniquePeopleTestedBySpecimenDateRollingSum) %>%
+  set_names(c("date", "value"))
+
+a <- df %>%
+  plot_time_series(date, value, .interactive = FALSE) +
+  ggtitle("Test positivity time series")
+
+b <- df1 %>%
+  plot_time_series(date, value, .interactive = FALSE) +
+  ggtitle("People tested")
+
+cowplot::plot_grid(a, b)
+```
+
+## Making it interactive
+
+Setting `.interactive=TRUE` converts the plot to a `plotly` chart which adds interactivity.
+
+```{r interactive}
+
+df %>%
+  plot_time_series(date, value, .interactive = TRUE, .smooth_span = .3, .plotly_slider = TRUE)  ## adds a date slider to zoom in or out of the data
+  
+```
+
+## Preparing for modelling
+
+### Splitting the data
+
+We'll split the data in to training and test datasets using the `time_series_split` function.
+
+```{r split}
+
+splits <- df %>%
+  time_series_split(assess = "3 months", cumulative = TRUE) ## using last 3 months as test data, and all previous data as training data
+
+splits
+
+```
+
+Lets visualise:
+
+```{r cross-validation}
+
+splits %>%
+  tk_time_series_cv_plan() %>%    ## converts splits to data frame
+  plot_time_series_cv_plan(date, value, .interactive = FALSE) ## shows test and train data
+
+
+```
+
+## Let's model
+
+Its now time to fit some models. For this exercise we'll fit six models and compare their performance:
+
+-   Autoarima - a conventional time series model (autoregressive moving average)
+
+-   exponential smoothing - widely used to fit time series
+
+-   Prophet - a modern and powerful time series algorithm developed by [Facebook](https://facebook.github.io/prophet/) @taylor2017
+
+-   Random forest - a widely used machine learning model
+
+-   Prophet + xgboost - a state of the art algorithm combining `prophet` and `xgboost` - a very effective boosted tree model. @jain2020
+
+-   Spline model - Multivariate adaptive regression spline (MARS) - from the `earth` package.
+
+### Autoarima
+
+We are using a *model specification* to set up the model - this form is used in all models. There are 3 elements:
+
+-   Specifying the model 'type' - in this case `arima_reg`
+
+-   Setting model engine to undertake the analysis - `auto_arima`
+
+-   Supplying a formula `value ~ date` which means *value* as a function of *date* - using the training data from the `splits` data frame.
+
+```{r autoarima}
+model_fit_arima <- arima_reg() %>%
+  set_engine("auto_arima") %>%
+  fit(value ~ date, training(splits))
+
+```
+
+Note it identifies that the data is a daily dataset. The output of this step is:
+
+```{r arima-output}
+
+model_fit_arima
+
+
+```
+
+### Exponential smoothing (ets)
+
+```{r ets}
+
+model_fit_ets <- exp_smoothing() %>%
+    set_engine(engine = "ets") %>%
+    fit(value ~ date, data = training(splits))
+
+model_fit_ets
+
+```
+
+### Prophet
+
+We can use similar code for `prophet:`
+
+```{r prophet}
+
+model_fit_prophet <- prophet_reg(seasonality_yearly = TRUE, seasonality_weekly = TRUE) %>%
+  set_engine("prophet") %>%
+  fit(value ~ date, training(splits))
+
+
+```
+
+```{r prophet-fit}
+
+model_fit_prophet
+```
+
+#### Feature engineering
+
+At this point we can also generate additional data features using functions from `tidymodels`
+
+In this case:
+
+-   `step_timeseries_signature` indexes the data by date and extract features for machine learning.
+
+-   `step_rm` removes some columns
+
+-   `step_fourier` applies a Fourier transform to the date
+
+-   `step_dummy` converts all categorical variables to a series of columns with 1 where the feature is present and 0 where it isn't (e.g. day of the week). This is format that many machine learning algorithms need for categorical variables.
+
+The specification merely contains the details of what should be done with the data; the `prep` and `juice` steps actually apply it
+
+```{r feature-engineering}
+
+recipe_spec <- recipe(value ~ date, training(splits)) %>%
+  step_timeseries_signature(date) %>%
+  step_rm(contains("am.pm"), contains("hour"), contains("minute"),
+          contains("second"), contains("xts")) %>%
+  step_fourier(date, period = 365, K = 5) %>%
+  step_dummy(all_nominal())
+
+recipe_spec %>% prep() %>% juice()
+
+```
+
+The features created include:
+
+-   `date.index.num` - seconds since 1/1/1970
+
+-   `date_half` - six month split
+
+-   `date_mday` - day in the month
+
+We can now use the enhanced dataset for the other algorithms:
+
+### Random forest
+
+```{r random-forest}
+
+model_spec_rf <- rand_forest(trees = 500, min_n = 50) %>%
+  set_engine("randomForest")
+
+workflow_fit_rf <- workflow() %>%
+  add_model(model_spec_rf) %>%
+  add_recipe(recipe_spec %>% step_rm(date)) %>%
+  fit(training(splits))
+
+workflow_fit_rf
+```
+
+### Prophet-boost
+
+```{r prophet-boost}
+
+model_spec_prophet_boost <- prophet_boost(seasonality_yearly = TRUE) %>%
+  set_engine("prophet_xgboost") 
+
+workflow_fit_prophet_boost <- workflow() %>%
+  add_model(model_spec_prophet_boost) %>%
+  add_recipe(recipe_spec) %>%
+  fit(training(splits))
+
+workflow_fit_prophet_boost 
+
+```
+
+### MARS
+
+```{r MARS}
+
+model_spec_mars <- mars(mode = "regression") %>%
+    set_engine("earth") 
+
+workflow_fit_mars <- workflow() %>%
+  add_model(model_spec_mars) %>%
+  add_recipe(recipe_spec) %>%
+  fit(training(splits))
+
+workflow_fit_mars
+
+```
+
+## Model evaluation
+
+Now lets pool results to make comparison between the different models. The `modeltable` function provides a facility for this.
+
+```{r modeltable}
+
+model_table <- modeltime_table(
+  model_fit_arima, 
+  model_fit_ets, 
+  model_fit_prophet,
+  workflow_fit_rf,
+  workflow_fit_prophet_boost, 
+  workflow_fit_mars
+) 
+
+model_table
+
+```
+
+## Applying models to test data
+
+We can now apply our models to the test data. In `modeltime` this is called *calibration*.
+
+```{r calibration}
+
+calibration_table <- model_table %>%
+  modeltime_calibrate(testing(splits))
+
+
+
+```
+
+We can pass the output of the previous step to `model_time_forecast` to model the "held-out" portion based on our training data.
+
+```{r forecast}
+
+calibration_table %>%
+  modeltime_forecast(actual_data = df) %>%
+  plot_modeltime_forecast(.interactive = TRUE)
+
+```
+
+Neither ets or arima predict the increase (due to omicron) in cases. Both prophet models seem to capture the rising trend but not the pattern. The random forest model seems to mirror the pattern quite well, as does the mars model. We can quantify the accuracy of our models using `modeltime_accuracy`:
+
+```{r accuracy}
+
+cal_acc <- calibration_table %>%
+  modeltime_accuracy() 
+
+cal_acc %>%
+  table_modeltime_accuracy(.interactive = FALSE)
+
+```
+
+The r-squared values for arima and ets and MARS are very low but > 0.8 for the other models - `r tolower(cal_acc[which.min(cal_acc$rmse), ".model_desc"])` has the lowest overall root mean squared error (rmse) of `r round(cal_acc[5, "rmse"],2)` - this means on average the model predicts the daily positivity rate +- `r round(cal_acc[5, "rmse"],2)`%.
+
+## Forecasting ahead
+
+The final step is to take our best models and look ahead to see what they predict. Lets forecast the next 6 months.
+
+```{r look-ahead}
+calibration_table %>%
+  # Remove ARIMA model with low accuracy
+  filter(!.model_id %in% c(1:2)) %>%
+  
+  # Refit and Forecast Forward
+  modeltime_refit(df) %>%
+  modeltime_forecast(h = "6 months", actual_data = df) %>%
+  plot_modeltime_forecast(.interactive = TRUE, .plotly_slider = TRUE)
+
+```
+
+What does this show?
+
+## References

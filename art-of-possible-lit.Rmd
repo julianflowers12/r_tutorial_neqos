@@ -1,0 +1,200 @@
+---
+title: "aRt of the possible"
+subtitle: "Literature search in R"
+author: "Julian Flowers"
+date: "2016/12/12 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( message = FALSE)
+options(htmltools.dir.version = FALSE)
+library(pacman)
+p_load(tidyverse, europepmc, tidypmc, devtools, topicmodels, myScrapers)
+# source_url("https://github.com/julianflowers12/myScrapers/blob/master/R/pubmedAbstractR.R?raw=TRUE")
+# source_url("https://github.com/julianflowers12/myScrapers/blob/master/R/abstract_nounphrases.R?raw=TRUE")
+# source_url("https://github.com/julianflowers12/myScrapers/blob/master/R/topic_viz.R?raw=TRUE")
+# source_url("https://github.com/julianflowers12/myScrapers/blob/master/R/annotate_abstracts.R?raw=TRUE")
+# source_url("https://github.com/julianflowers12/myScrapers/blob/master/R/abstract_topics.R?raw=TRUE")
+```
+
+---
+
+### Outline
+
+In this slideset we show how to:
+
+1. Search `pubmed`
+2. Download abstracts
+3. Extract fulltext
+4. Extract tables from fulltext
+5. Extract references from identified articles
+
+---
+class: top, left
+
+### Search
+
+```{r search,  cache = TRUE}
+
+key <- Sys.getenv("ncbi_key")
+
+search <- "(wellbeing OR health) (biodiversity OR wildlife OR nature OR greenspace OR ecosystem) systematic[sb]"
+
+n <- 3337
+
+start <- 1980
+end <- 2021
+
+out <- pubmedAbstractR(search = search, n = n, ncbi_key = key, start = start, end = end)
+
+
+```
+
+---
+### Filter by search term
+
+```{r filter}
+
+selected <- out$abstracts %>%
+  filter(str_detect(abstract, "[Bb]iodiversity"))
+
+selected <- selected[c(18, 7, 9), ]
+
+selected
+
+
+
+
+
+```
+
+---
+
+### Get further details
+
+```{r details}
+
+ep <- map(selected$pmid, epmc_details)
+
+basics <- map(ep, "basic") %>%
+  enframe() %>%
+  unnest("value")
+
+ft <- pluck(basics, "pmcid")
+
+ft <- ft[!is.na(ft)]
+
+doc <- map(ft, pmc_xml)
+
+```
+
+---
+
+### Get full text
+
+
+```{r}
+
+doc_text <- map_dfr(doc, pmc_text)
+
+head(doc_text)
+
+```
+
+---
+
+### Get tables
+
+```{r}
+
+doc_tab <- map(doc, pmc_table)
+
+
+```
+
+
+---
+
+### Get references
+
+```{r}
+doc_ref <- map(doc, pmc_reference)
+
+doc_ref[1]
+
+
+
+
+```
+
+
+---
+
+### Green example
+
+```{r}
+
+selected_green <- out$abstracts %>%
+  filter(str_detect(abstract, "[Gr]eenspace|[Gg]reen-space"))
+
+ep_green <- map(selected_green$pmid, epmc_details)
+
+basics_green <- map(ep_green, "basic") %>%
+  enframe() %>%
+  unnest("value")
+
+ft_green <- pluck(basics_green, "pmcid")
+
+ft_green <- ft_green[!is.na(ft_green)]
+
+doc_green <- map(ft_green, pmc_xml)
+
+
+doc_text_green <- map_dfr(doc_green, pmc_text)
+
+doc_tab_green <- map(doc_green, pmc_table)
+
+doc_ref_green <- map_dfr(doc_green, pmc_reference)
+
+
+
+
+```
+---
+
+```{r}
+
+
+doc_ref_green %>% head(10)
+```
+
+---
+
+```{r}
+
+
+np <- annotate_abstracts(selected_green$abstract, pmid = selected_green$pmid)
+
+np <- abstract_nounphrases(anno)
+
+topics <- abstract_topics(np, k = 10)
+
+topics$terms
+
+
+figures <- map(1:10, ~(abstract_topic_viz(x = np, m = topics$model, scores = topics$scores, n = .x)))
+
+
+```
+
+
+
+
+
