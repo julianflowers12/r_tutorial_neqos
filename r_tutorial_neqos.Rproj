@@ -14,3 +14,7 @@ LaTeX: pdfLaTeX
 
 AutoAppendNewline: Yes
 StripTrailingWhitespace: Yes
+
+PythonType: virtualenv
+PythonVersion: 3.6.13
+PythonPath: my_env/bin/python

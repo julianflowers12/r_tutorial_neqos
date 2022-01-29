@@ -327,7 +327,7 @@ The final step is to take our best models and look ahead to see what they predic
 
 ```{r look-ahead}
 calibration_table %>%
-  # Remove ARIMA model with low accuracy
+  # Remove ARIMA/ETS model with low accuracy
   filter(!.model_id %in% c(1:2)) %>%
   
   # Refit and Forecast Forward

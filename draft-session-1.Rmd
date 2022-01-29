@@ -37,3 +37,10 @@ knitr::opts_chunk$set(echo = FALSE)
 -   Write a package
 
 -   Create software tools
+
+-   GIS
+
+-   Visualisation
+
+
+
