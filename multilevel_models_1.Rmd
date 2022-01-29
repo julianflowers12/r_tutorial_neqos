@@ -1,0 +1,341 @@
+---
+title: "MLM"
+author: "Julian Flowers"
+date: "05/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pacman)
+p_load(NHSRdatasets, tidyverse, lubridate, mgcv, rstanarm, lme4, skimr)
+
+```
+
+## Predict deaths 
+
+```{r}
+news <- NHSRdatasets::synthetic_news_data
+
+with(news, table(died))
+
+skim(news)
+
+
+
+```
+### Build a model 
+
+```{r}
+## mod 1  - no hierarchy
+
+library(broom)
+
+d_mod <- glm(died ~ . - 1, family = "binomial", data = news)
+
+tidy(d_mod, exponentiate = TRUE, conf.int = TRUE) %>%
+  ggplot(aes(estimate, reorder(term, -estimate))) +
+  geom_point(size = .1) +
+  geom_pointrange(aes(xmin = conf.low, xmax = conf.high)) +
+  geom_vline(xintercept = 1, colour = "red", lty = "dotted") +
+  theme_bw()
+
+```
+
+```{r}
+
+preds <- data.frame(obs = news$died, exp = predict(d_mod, news, type = "response"))
+
+class <- preds %>%
+  mutate(class = ifelse(exp > 0.5, 1, 0))
+
+library(caret)
+
+c <- confusionMatrix(with(class, table(obs, class))) 
+
+c$byClass %>%
+  data.frame()
+```
+
+### Try a different model
+
+```{r}
+
+gam_mod <-  gam(died ~ male + s(age) + s(NEWS) + s(syst) + s(dias) + s(temp) + alert, family = "binomial", data = news, REML = TRUE)
+
+summary(gam_mod)
+
+plot(gam_mod)
+
+preds_gam <- data.frame(obs = news$died, exp = predict(gam_mod, news, type = "response"))
+
+class <- preds_gam %>%
+  mutate(class = ifelse(exp > 0.5, 1, 0))
+
+c <- confusionMatrix(with(class, table(obs, class))) 
+
+c$byClass %>%
+  data.frame()
+
+```
+
+
+```{r}
+
+library(ranger)
+library(vimp)
+
+ranger_mod <- ranger(factor(died) ~ ., data = news, importance = "permutation")
+
+ranger_mod$variable.importance %>%
+  data.frame() %>%
+  set_names(c("imp")) %>%
+  arrange(-imp)
+
+ranger_pred <-  data.frame(obs = news$died, exp = predictions(ranger_mod, news, type = "class"))
+
+
+confusionMatrix(with(ranger_pred, table(obs, exp))) 
+
+
+```
+
+
+```{r}
+
+mod1 <- lme4::glmer(counts ~ 1 + (1|category_2), family = poisson, data = death)
+
+summary(mod1)
+
+mod2 <- lme4::glmer(counts ~ category_2 + week_no + (1|category_2), family = poisson, data = death)
+
+summary(mod2)
+
+
+tidy(mod1) %>%
+  mutate_if(is.numeric, round, 3)
+  
+los$pred <- predict(mod1, los, type = "response")
+los$pred1 <- predict(mod2, los, type = "response")
+los$pred2 <- predict(mod3, los, type = "response")
+
+
+los <- los %>%
+  mutate(predict = ifelse(pred < 0.5, 0, 1), 
+         predict1 = ifelse(pred1 < 0.5, 0, 1))
+
+with(los, table(Death, predict1))
+
+```
+
+```{r}
+
+ae_type_1_prov <- ae_type_1 %>%
+  mutate(conv_ratio = admissions / attendances, 
+         breach_ratio = breaches / attendances)
+
+library(tsibble)
+
+ae_type_1_prov_ts <- tsibble::as_tsibble(ae_type_1_prov, key = org_code, index = period)
+```
+
+```{r}
+
+model <- bam(breach_ratio ~ s(conv_ratio) + period, data = ae_type_1_summary)
+
+broom.mixed::tidy(model) %>%
+  mutate(id = row_number()) %>%
+  filter(p.value < 0.01)
+
+```
+
+
+## LMER
+
+```{r}
+
+str(ae_type_1_prov)
+
+mod_1 <- lmer(breach_ratio ~ 1 + (1|org_code), 
+              data = ae_type_1_prov, 
+              REML = FALSE)
+
+mod_1
+
+
+```
+
+```{r}
+
+mod_2 <- lmer(breach_ratio ~ 1 + conv_ratio + (1|org_code), 
+              data = ae_type_1_prov, 
+              REML = FALSE)
+
+mod_2
+
+
+```
+
+```{r}
+
+mod_3 <- lmer(breach_ratio ~ 1 + conv_ratio + (1 + conv_ratio|org_code), 
+              data = ae_type_1_prov, 
+              REML = FALSE)
+
+broom::augment(mod_3, ae_type_1_prov)
+oplot(mod_3)
+
+data.frame(preds = predict(mod_3, ae_type_1_prov), truth = ae_type_1_prov$breach_ratio) %>%
+  ggplot(aes(preds, truth)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
+```
+
+
+```{r}
+
+J <- length(unique(ae_type_1_prov$org_code))
+N <- nrow(ae_type_1_prov)
+
+## complete pooling
+
+pooled <- lm(breach_ratio ~ conv_ratio, data = ae_type_1_prov)
+a_pooled <- coef(pooled)[1]
+b_pooled <- coef(pooled)[2]
+
+## no pooling
+
+nopooled <- lm(formula = breach_ratio ~ 0 + org_code + conv_ratio,
+               data = ae_type_1_prov)
+a_nopooled <- coef(nopooled)[1:J]   # 73 no-pooling intercepts              
+b_nopooled <- coef(nopooled)[J+1]
+
+# Partial pooling (multilevel) regression
+a_part_pooled <- coef(mod_3)$org_code[, 1]
+b_part_pooled <- coef(mod_3)$org_code[, 2]
+
+
+
+```
+
+```{r}
+
+y <- ae_type_1_prov$breach_ratio
+x <- as.numeric(ae_type_1_prov$conv_ratio) 
+org_id <- ae_type_1_prov$org_code
+
+set.seed(1234)
+
+org_sel <- sample(org_id, 10)
+
+df <- data.frame(y, x, org_id)
+df8 <- subset(df, org_id %in% org_sel)
+
+df8$a_pooled <- a_pooled 
+df8$b_pooled <- b_pooled
+df8$a_nopooled <- a_nopooled[df8$org_id]
+df8$b_nopooled <- b_nopooled
+df8$a_part_pooled <- a_part_pooled[df8$org_id]
+df8$b_part_pooled <- b_part_pooled[df8$org_id]
+
+ggplot(data = df8, 
+       aes(x = x, y = y)) + 
+  facet_wrap(facets = ~ org_id, 
+             ncol = 5) + 
+  theme_bw() +
+  geom_jitter(position = position_jitter(width = .05, 
+                                         height = 0)) +
+  geom_abline(aes(intercept = a_pooled, 
+                  slope = b_pooled), 
+              linetype = "solid", 
+              color = "blue", 
+              size = 0.5) +
+  geom_abline(aes(intercept = a_nopooled, 
+                  slope = b_nopooled), 
+              linetype = "longdash", 
+              color = "red", 
+              size = 0.5) + 
+  geom_abline(aes(intercept = a_part_pooled, 
+                  slope = b_part_pooled), 
+              linetype = "dotted", 
+              color = "purple", 
+              size = 0.7) 
+
+
+
++ 
+  scale_x_continuous(breaks = c(0, 1), 
+                     labels = c("male", "female")) + 
+  labs(title = "Complete-pooling, No-pooling, and Partial pooling estimates",
+       x = "", 
+       y = "Total score on coursework paper")+theme_bw( base_family = "serif")
+
+
+```
+
+
+
+```{r}
+
+data("roaches")
+
+mod_a <- rstanarm::stan_glmer(breach_ratio ~ 1 + (1|org_code), data = ae_type_1_prov, cores = 6)
+
+prior_summary(mod_a)
+
+sd(ae_type_1_prov$breach_ratio)
+
+print(mod_a)
+
+summary(mod_a, 
+        pars = c("(Intercept)", "sigma", "Sigma[org_code:(Intercept),(Intercept)]"),
+        probs = c(0.025, 0.975),
+        digits = 2)
+
+
+sims <- as.matrix(mod_a)
+cnames <- colnames(sims)
+
+mu_a_sims <- as.matrix(mod_a, 
+                       pars = "(Intercept)")
+# draws for 73 schools' school-level error
+u_sims <- as.matrix(mod_a, 
+                    regex_pars = "b\\[\\(Intercept\\) org_code\\:")
+# draws for 73 schools' varying intercepts               
+a_sims <- as.numeric(mu_a_sims) + u_sims          
+
+# Obtain sigma_y and sigma_alpha^2
+# draws for sigma_y
+s_y_sims <- as.matrix(mod_a, 
+                       pars = "sigma")
+# draws for sigma_alpha^2
+s__alpha_sims <- as.matrix(mod_a, 
+                       pars = "Sigma[org_code:(Intercept),(Intercept)]")
+
+a_mean <- map_dbl(a_sims, mean)
+a_sd <- map_dbl(a_sims, sd, na.rm = TRUE)
+a_q <- map(a_sims, ~(quantile(.x, na.rm = TRUE, probs = c(.025, .5, .975))))
+
+mod_b <- rstanarm::stan_glmer(breach_ratio ~ conv_ratio + 1|org_code, data = ae_type_1_prov, cores = 6)
+
+summary(mod_b)
+
+broom::tidy(mod_b, intervals = TRUE, parameters = "hierarchical")
+
+  prior_summary(mod_b)
+pp_check(mod_b)
+
+launch_shinystan(mod_b)
+
+ppd <- posterior_predict(mod_b, newdata = ae_type_1_prov)
+
+ppd_df <- data.frame(ppd, each = nrow(ppd))
+
+
+```
+
+
+
+

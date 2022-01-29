@@ -1,0 +1,79 @@
+---
+title: "Excess mortality"
+output: 
+    html_document: 
+      toc: yes
+      toc_float: yes
+      code_folding: hide
+      keep_md: yes
+      highlight: pygments
+      theme: flatly
+      number_sections: yes
+bibliography: references.bib
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(pacman)
+p_load(tidyverse, flextable, bsplus)
+```
+
+-   url - <https://app.powerbi.com/view?r=eyJrIjoiYmUwNmFhMjYtNGZhYS00NDk2LWFlMTAtOTg0OGNhNmFiNGM0IiwidCI6ImVlNGUxNDk5LTRhMzUtNGIyZS1hZDQ3LTVmM2NmOWRlODY2NiIsImMiOjh9>
+
+
+# Heading 1 {.tabset}
+
+
+## Heading 2 
+
+```{r, accordion = TRUE}
+library(readODS)
+library(here)
+library(tidyverse)
+
+path <- here("data")
+
+df_sheets <- ods_sheets(paste0(path, "/EMData.ods"))
+
+
+df_region <- read_ods(paste0(path, "/EMData.ods"), sheet = "region")
+```
+
+```{r}
+df_region %>%
+  janitor::clean_names() %>%
+  mutate(covid_per = round(100 * deaths_with_covid_19_on_the_death_certificate / registered_deaths, 2)) %>%
+  group_by(Region = population_subgroup) %>%
+  summarise(mean = mean(covid_per), 
+            median = median(covid_per), 
+            sd = sd(covid_per), 
+            q = quantile(covid_per, probs = c(0.1, 0.25, .75, .9), names = TRUE)) %>% 
+  mutate(quant = c(0.1, 0.25, 0.75, 0.9)) %>%
+  pivot_wider(names_from =  "quant", values_from = "q") %>%
+  mutate_if(is.numeric, round, 1) %>%
+  flextable::flextable(
+    col_keys = c("Region", "mean", "median", "0.1", "0.9")
+    ) %>%
+  add_footer_lines("Source: Weekly excess mortality") %>%
+  add_footer_lines("Source: https://app.powerbi.com/view?r=eyJrIjoiYmUwNmFhMjYtNGZhYS00NDk2LWFlMTAtOTg0OGNhNmFiNGM0IiwidCI6ImVlNGUxNDk5LTRhMzUtNGIyZS1hZDQ3LTVmM2NmOWRlODY2NiIsImMiOjh9")
+  
+ 
+
+```
+
+  
+```{r}
+
+bs_accordion(id = "WRITING") %>%
+  bs_set_opts(panel_type = "primary", use_heading_link = TRUE) %>%
+  bs_append(title = "Writing well for specialists", 
+            content = "This is the content for Writing well for specialists") %>%
+  bs_append(title = "Know your audience", 
+            content = "Content for know your audience") %>%
+  bs_set_opts(panel_type = "success") %>%
+  bs_append(title = "How people read", 
+            content = "Content for how people read")
+```
+
+

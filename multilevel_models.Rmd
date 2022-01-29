@@ -1,0 +1,273 @@
+---
+title: "Time series"
+author: "Julian Flowers"
+date: "05/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(NHSRdatasets); library(tidyverse);library(lubridate);library(mgcv);library(rstanarm); library(lme4)
+```
+
+## 
+
+```{r}
+ae <- NHSRdatasets::ae_attendances
+ae <- ae %>%
+  drop_na() %>%
+  filter(type == 1)
+
+mod1 <- glm(breaches ~ as.numeric(period) + admissions + offset(attendances), data = ae, family = poisson)
+
+
+```
+
+
+
+
+
+range(ae$period)
+
+length(unique(ae$org_code))
+
+glimpse(ae)
+
+## just look at type 1 AEs
+
+ae_type_1 <- ae %>%
+  filter(type == "1")
+
+## summarise
+
+ae_type_1_summary <- ae_type_1 %>%
+  group_by(period) %>%
+  summarise(tot_att = sum(attendances), 
+            tot_breach = sum(breaches), 
+            tot_admissions = sum(admissions)) %>%
+  mutate(conv_ratio = tot_admissions / tot_att, 
+         breach_ratio = tot_breach / tot_att)
+
+
+ae_type_1_summary %>%
+  ggplot() +
+  geom_smooth(aes(period, conv_ratio), method = "gam") + 
+  geom_point(aes(period, conv_ratio)) +
+  geom_smooth(aes(period, breach_ratio), method = "gam")  ## note that is calculates correct aspect ratio and banks data at 45 degrees after Cleveland.
+
+ae_type_1_summary %>%
+  ggplot(aes(conv_ratio, breach_ratio)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+  
+  
+  
+  
+
+```
+
+```{r}
+
+ae_type_1_prov <- ae_type_1 %>%
+  mutate(conv_ratio = admissions / attendances, 
+         breach_ratio = breaches / attendances)
+
+library(tsibble)
+
+ae_type_1_prov_ts <- tsibble::as_tsibble(ae_type_1_prov, key = org_code, index = period)
+```
+
+```{r}
+
+model <- bam(breach_ratio ~ s(conv_ratio) + period, data = ae_type_1_summary)
+
+broom.mixed::tidy(model) %>%
+  mutate(id = row_number()) %>%
+  filter(p.value < 0.01)
+
+```
+
+
+## LMER
+
+```{r}
+
+str(ae_type_1_prov)
+
+mod_1 <- lmer(breach_ratio ~ 1 + (1|org_code), 
+              data = ae_type_1_prov, 
+              REML = FALSE)
+
+mod_1
+
+
+```
+
+```{r}
+
+mod_2 <- lmer(breach_ratio ~ 1 + conv_ratio + (1|org_code), 
+              data = ae_type_1_prov, 
+              REML = FALSE)
+
+mod_2
+
+
+```
+
+```{r}
+
+mod_3 <- lmer(breach_ratio ~ 1 + conv_ratio + (1 + conv_ratio|org_code), 
+              data = ae_type_1_prov, 
+              REML = FALSE)
+
+mod_3
+
+
+```
+
+
+```{r}
+
+J <- length(unique(ae_type_1_prov$org_code))
+N <- nrow(ae_type_1_prov)
+
+## complete pooling
+
+pooled <- lm(breach_ratio ~ conv_ratio, data = ae_type_1_prov)
+a_pooled <- coef(pooled)[1]
+b_pooled <- coef(pooled)[2]
+
+## no pooling
+
+nopooled <- lm(formula = breach_ratio ~ 0 + org_code + conv_ratio,
+               data = ae_type_1_prov)
+a_nopooled <- coef(nopooled)[1:J]   # 73 no-pooling intercepts              
+b_nopooled <- coef(nopooled)[J+1]
+
+# Partial pooling (multilevel) regression
+a_part_pooled <- coef(mod_3)$org_code[, 1]
+b_part_pooled <- coef(mod_3)$org_code[, 2]
+
+
+
+```
+
+```{r}
+
+y <- ae_type_1_prov$breach_ratio
+x <- as.numeric(ae_type_1_prov$conv_ratio) 
+org_id <- ae_type_1_prov$org_code
+
+set.seed(1234)
+
+org_sel <- sample(org_id, 10)
+
+df <- data.frame(y, x, org_id)
+df8 <- subset(df, org_id %in% org_sel)
+
+df8$a_pooled <- a_pooled 
+df8$b_pooled <- b_pooled
+df8$a_nopooled <- a_nopooled[df8$org_id]
+df8$b_nopooled <- b_nopooled
+df8$a_part_pooled <- a_part_pooled[df8$org_id]
+df8$b_part_pooled <- b_part_pooled[df8$org_id]
+
+ggplot(data = df8, 
+       aes(x = x, y = y)) + 
+  facet_wrap(facets = ~ org_id, 
+             ncol = 5) + 
+  theme_bw() +
+  geom_jitter(position = position_jitter(width = .05, 
+                                         height = 0)) +
+  geom_abline(aes(intercept = a_pooled, 
+                  slope = b_pooled), 
+              linetype = "solid", 
+              color = "blue", 
+              size = 0.5) +
+  geom_abline(aes(intercept = a_nopooled, 
+                  slope = b_nopooled), 
+              linetype = "longdash", 
+              color = "red", 
+              size = 0.5) + 
+  geom_abline(aes(intercept = a_part_pooled, 
+                  slope = b_part_pooled), 
+              linetype = "dotted", 
+              color = "purple", 
+              size = 0.7) 
+
+
+
++ 
+  scale_x_continuous(breaks = c(0, 1), 
+                     labels = c("male", "female")) + 
+  labs(title = "Complete-pooling, No-pooling, and Partial pooling estimates",
+       x = "", 
+       y = "Total score on coursework paper")+theme_bw( base_family = "serif")
+
+
+```
+
+
+
+```{r}
+
+data("roaches")
+
+mod_a <- rstanarm::stan_glmer(breach_ratio ~ 1 + (1|org_code), data = ae_type_1_prov, cores = 6)
+
+prior_summary(mod_a)
+
+sd(ae_type_1_prov$breach_ratio)
+
+print(mod_a)
+
+summary(mod_a, 
+        pars = c("(Intercept)", "sigma", "Sigma[org_code:(Intercept),(Intercept)]"),
+        probs = c(0.025, 0.975),
+        digits = 2)
+
+
+sims <- as.matrix(mod_a)
+cnames <- colnames(sims)
+
+mu_a_sims <- as.matrix(mod_a, 
+                       pars = "(Intercept)")
+# draws for 73 schools' school-level error
+u_sims <- as.matrix(mod_a, 
+                    regex_pars = "b\\[\\(Intercept\\) org_code\\:")
+# draws for 73 schools' varying intercepts               
+a_sims <- as.numeric(mu_a_sims) + u_sims          
+
+# Obtain sigma_y and sigma_alpha^2
+# draws for sigma_y
+s_y_sims <- as.matrix(mod_a, 
+                       pars = "sigma")
+# draws for sigma_alpha^2
+s__alpha_sims <- as.matrix(mod_a, 
+                       pars = "Sigma[org_code:(Intercept),(Intercept)]")
+
+a_mean <- map_dbl(a_sims, mean)
+a_sd <- map_dbl(a_sims, sd, na.rm = TRUE)
+a_q <- map(a_sims, ~(quantile(.x, na.rm = TRUE, probs = c(.025, .5, .975))))
+
+mod_b <- rstanarm::stan_glmer(breach_ratio ~ conv_ratio + 1|org_code, data = ae_type_1_prov, cores = 6)
+
+summary(mod_b)
+
+broom::tidy(mod_b, intervals = TRUE, parameters = "hierarchical")
+
+  prior_summary(mod_b)
+pp_check(mod_b)
+
+launch_shinystan(mod_b)
+
+ppd <- posterior_predict(mod_b, newdata = ae_type_1_prov)
+
+ppd_df <- data.frame(ppd, each = nrow(ppd))
+
+
+```
+
+
+
+

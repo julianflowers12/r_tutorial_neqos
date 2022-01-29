@@ -1,0 +1,226 @@
+---
+title: "aRt of the possible"
+subtitle: "Using R"
+author: "Julian Flowers"
+date: "13th Jan 2022 (updated: `r Sys.Date()`)"
+output:
+  html_document:
+    toc: yes
+    code_folding: hide
+    
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE, cache = TRUE)
+library(pacman)
+p_load(tidyverse)
+
+
+```
+
+
+## Why learn R?
+
+* Transformational
+* Extend what you can do
+* Marketable
+* Added value
+* Huge community of support
+* Its the future and the future is now
+* Its fun!
+
+
+
+## Environments and systems 
+### R is:
+* A statistical progamming language
+* Open source
+* An essential toolkit for data science and modern analysis
+    * A GIS
+    * A modelling toolkit
+    * A machine learning toolkit
+    * A time series analysis toolkit
+    * A suite of data wrangling tools
+    * A suite of high quality visualisation tools
+    * A set of tools for creating interactive vizzes and dashboards
+    * A powerful text mining toolkit
+    * A set of tools for undertaking reproducible open science
+    * A tool for creating and building analytical and data services
+    
+
+## Getting up and running (quickly)
+
+* Download and install:
+    + [R (latest version 4.1.2)](https://cran.r-project.org/src/base/R-4/)
+    + [RTools (v4) if running on Windows](https://cran.r-project.org/bin/windows/Rtools/rtools40.html)
+    + [RStudio IDE](https://www.rstudio.com/products/rstudio/download/#download) (latest is RStudio Desktop 2021.09.1+372)
+    
+* Set up a Github account
+      + Version control system
+      + This can be organisational or personal; public or private
+      
+* Learn how to:
+    + Install packages
+          + CRAN
+          + Ropensci
+          + From Github
+    + Get data into R
+    + Use `dplyr`, `ggplot2`
+    + Write simple functions
+    + Use RMarkdown
+  
+
+### Getting data into R
+
+* Can import data is any format e.g.
+  + csv 
+     - `readr::read_csv()`
+     - `data.table::fread()` -  fast read for large files
+  + xlsx 
+     - `readxl::read_excel()`
+  + ods
+     - `ODS::read_ods()`
+  + .dta / .sav
+     - `haven::read_sav()` / `haven::read_spss()`
+     - `haven::read_dta()`
+  + text files
+     - readr::read_delim()
+     
+* R also has its own data format `.rds` which is fast and highly compressed
+
+```{r}
+
+
+data <- read_csv("https://coronavirus.data.gov.uk/api/v1/data?filters=areaType=nation;areaName=England&structure=%7B%22areaType%22:%22areaType%22,%22areaName%22:%22areaName%22,%22areaCode%22:%22areaCode%22,%22date%22:%22date%22,%22uniqueCasePositivityBySpecimenDateRollingSum%22:%22uniqueCasePositivityBySpecimenDateRollingSum%22,%22uniquePeopleTestedBySpecimenDateRollingSum%22:%22uniquePeopleTestedBySpecimenDateRollingSum%22%7D&format=csv", show_col_types = F)
+
+
+```
+
+```{r}
+
+head(data)
+
+```
+## Core tidy functions {.tabset .tabset-pills}
+
+### `dplyr`
+
+Data wrangling package with a set of key functions (verbs)
+
+### `filter` - operations to select rows on the basis of specified criteria
+
+```{r}
+
+data %>%
+  filter(date == "2022-01-01")
+
+```
+
+
+### `select` -  select columns
+
+```{r}
+
+data %>%
+  select(date, uniqueCasePositivityBySpecimenDateRollingSum) %>%
+  filter(date >= "2022-01-01")
+
+```
+
+### `mutate` - add a new column
+
+```{r}
+
+data %>%
+  mutate(cases = uniqueCasePositivityBySpecimenDateRollingSum / uniqueCasePositivityBySpecimenDateRollingSum[1]) %>%
+  select(-areaType) %>%
+  head()
+
+
+
+```
+
+### Plotting with `ggplot2`
+
+```{r fig.height=4, fig.width=6}
+
+data %>%
+  mutate(cases = uniqueCasePositivityBySpecimenDateRollingSum / uniqueCasePositivityBySpecimenDateRollingSum[1]) %>%
+  ggplot(aes(date, cases)) +
+  geom_line(lty = "dotted") +
+  geom_smooth(method = "gam", se = FALSE) +
+  theme_bw()
+
+
+
+```
+
+
+### NE Data
+
+```{r, echo = TRUE}
+
+devtools::install_github("ropensci/fingertipsR")
+
+library(fingertipsR); library(tidyverse)
+
+#fingertipsR::select_indicators()
+
+smoking <- fingertips_data(IndicatorID = c(92443, 93085, 93553, 93579, 
+                                           93573, 93798, 91547, 92304), 
+                           AreaTypeID = 401)
+
+
+smoking_ne <- smoking %>%
+  filter(ParentCode == "E12000001")
+
+
+```
+
+
+### Smoking prevalence trend in NE districts
+
+```{r, echo = FALSE}
+
+smoking_ne %>%
+  filter(str_detect(IndicatorName, "[Pp]revalence"), Age == "18+ yrs", Sex == "Persons") %>%
+  mutate(IndName = str_extract(IndicatorName, "current smokers.*")) %>%
+  ggplot(aes(round(TimeperiodSortable/10^4, 0), Value, colour = IndName)) +
+  geom_line(aes(group = IndName)) +
+  geom_point() +
+  geom_linerange(aes(ymin = LowerCI95.0limit, ymax = UpperCI95.0limit)) +
+  facet_wrap(~AreaName, 
+             nrow = 3) +
+  theme(legend.position = "right", 
+        axis.text.x = element_text(angle = 0, hjust =1)) +
+  labs(x = "Year", 
+       y = "Estimate (%)") +
+  scale_x_continuous(n.breaks = 6)
+
+
+
+```
+
+---
+### Code
+
+```
+smoking_ne %>%
+  filter(str_detect(IndicatorName, "[Pp]revalence"), Age == "18+ yrs", 
+  Sex == "Persons") %>%
+  ggplot(aes(round(TimeperiodSortable/10^4, 0), Value, 
+  colour = IndicatorName)) +
+  geom_line(aes(group = IndicatorName)) +
+  geom_point() +
+  geom_linerange(aes(ymin = LowerCI95.0limit, ymax = UpperCI95.0limit)) +
+  facet_wrap(~AreaName, 
+             nrow = 3) +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_text(angle = 0, hjust =1)) +
+  labs(x = "Year", 
+       y = "Estimate (%)") +
+  scale_x_continuous(n.breaks = 6)
+```
+
+
