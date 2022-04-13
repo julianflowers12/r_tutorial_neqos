@@ -1,0 +1,281 @@
+---
+title: "Pop Health/ HC surveillance"
+author: "Julian Flowers"
+date: "03/02/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, patchwork)
+
+```
+
+## Indicators
+
+-   MI
+
+-   Stroke
+
+-   Resp disease
+
+-   Alcohol
+
+-   Violence
+
+-   Falls 65-79
+
+-   Falls 80+
+
+-   NOF 65-79
+
+-   NOF 80+
+
+-   A&E
+
+-   OPD
+
+-   THR
+
+-   TKR
+
+-   Cataracts
+
+-   Angioplasty
+
+-   Obesity
+
+-   NHS sickness absence
+
+-   GP appts
+
+By CCG by year
+
+NE CCGs
+
+### Check indicators in [Fingertips](https://fingertips.phe.org.uk)
+
+-   Identify CCG indicators for admissions
+
+-   CCG
+
+```{r}
+
+library(fingertipsR)
+
+## get CCG area codes (NB changes from year to year)
+area_codes <- area_types() %>%
+  filter(str_detect(AreaTypeName, "CCG")) %>%
+  pluck("AreaTypeID") %>%
+  unique()
+
+## identify indicators
+
+ccg_ind_ids <- indicator_areatypes() %>%
+  filter(AreaTypeID %in% area_codes) %>%
+  pluck("IndicatorID") %>%
+  unique()
+
+## lookup ids
+
+inds <- indicators_unique()
+
+inds %>%
+  filter(IndicatorID %in% ccg_ind_ids) %>%
+  filter(str_detect(IndicatorName, "alcohol")) %>%
+  View()
+
+
+
+```
+
+### Stroke example
+
+```{r}
+
+### stroke admissions - 90986
+
+df <- fingertips_data(IndicatorID = c(90986, 93492, 90988),  AreaTypeID = 165)
+
+ne <- unique(df$ParentName)[13]
+
+inds <- unique(df$IndicatorName)
+
+ccg <- unique(df$AreaCode[df$ParentName == ne])
+
+```
+
+```{r}
+
+stroke_df <- df %>%
+  filter(ParentName == ne, 
+         IndicatorName == inds[1],
+         Sex == "Persons")
+
+stroke_df_1 <- stroke_df %>%
+  select(AreaName, TimeperiodSortable, Value, Count, Denominator) %>%
+  mutate(rate = Count / Denominator * 100000) 
+
+b <- stroke_df_1 %>%
+  filter(TimeperiodSortable > 20150000) %>%
+  mutate(year = str_sub(TimeperiodSortable, 1, 4)) %>%
+  ggplot(aes(AreaName, rate, fill = year)) +
+  geom_col(position = "dodge") +
+  scale_fill_brewer(palette = "Blues") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = inds[1])
+
+
+  
+  
+
+```
+
+```{r}
+
+area_types()
+
+at = c(154, 152, 166, 165, 167)
+
+alc_df_t <- map_dfr(at, ~fingertips_data(IndicatorID = 93492, AreaTypeID = .x))
+
+alc_df <- alc_df_t %>%
+  filter(AreaCode %in% ccg,  
+         Sex == "Persons")
+
+alc_df_1 <- alc_df %>%
+  select(AreaName, TimeperiodSortable, Value, Count, Denominator) %>%
+  mutate(rate = Count / Denominator * 100000) 
+
+alc_df_1 %>%
+  filter(TimeperiodSortable > 20150000) %>%
+  mutate(year = str_sub(TimeperiodSortable, 1, 4)) %>%
+  ggplot(aes(AreaName, rate, fill = factor(year))) +
+  geom_col(position = "dodge")+
+  scale_fill_brewer(palette = "Blues") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Alcohol")
+
+
+
+
+```
+
+```{r}
+
+chd_df <- df %>%
+  filter(ParentName == ne, 
+         IndicatorName == inds[2],
+         Sex == "Persons")
+
+chd_df_1 <- chd_df %>%
+  select(AreaName, TimeperiodSortable, Value, Count, Denominator) %>%
+  mutate(rate = Count / Denominator * 100000) 
+
+a <- chd_df_1 %>%
+  filter(TimeperiodSortable > 20150000) %>%
+  mutate(year = str_sub(TimeperiodSortable, 1, 4)) %>%
+  ggplot(aes(AreaName, rate, fill = year)) +
+  geom_col(position = "dodge") +
+  scale_fill_brewer(palette = "Blues") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = inds[2])
+```
+
+```{r}
+
+a + b
+
+
+```
+
+### Segment tool data
+
+```{r}
+
+tmp <- tempfile()
+
+curl::curl_download("https://analytics.phe.gov.uk/apps/segment-tool/session/3f7123d28aa8d9881164c4c3cc60c482/download/all_data_download?w=", destfile = tmp)
+
+sheets <- readxl::excel_sheets(tmp)
+
+seg_data <- readxl::read_excel(tmp, sheet = sheets[3], skip = 2) %>%
+  janitor::clean_names()
+
+```
+
+```{r}
+
+
+seg_data <- seg_data %>%
+  mutate(metric = str_extract(description, "Life expectancy in most deprived quintile"),
+         metric  = ifelse(is.na(metric), 
+                          str_extract(description, 
+                                      "Life expectancy in least deprived quintile"),
+                          metric), 
+         metric = ifelse(is.na(metric), 
+                         str_extract(description, 
+                                     "Absolute gap in life expectancy between most and least deprived quintile"), 
+                         metric)) %>%
+  select(-description) 
+
+ne_areas <- seg_data %>%
+  filter(str_detect(geography_code, "^E06|^E08")) %>%
+  pluck("geography") %>%
+  unique() %>%
+  .[c(1:5, 47, 55, 75:78, 91)]
+
+
+               filter(geography %in% ne_areas)
+
+seg_wide <- seg_data %>%
+  pivot_longer(names_to = "gender", values_to = "values", cols = male:female) %>%
+  pivot_wider(names_from = "metric", values_from = "values") %>%
+  janitor::clean_names() %>%
+  mutate(ratio = life_expectancy_in_least_deprived_quintile / life_expectancy_in_most_deprived_quintile
+         ) %>%
+  rename(abs_gap = absolute_gap_in_life_expectancy_between_most_and_least_deprived_quintile, 
+         most_dep = life_expectancy_in_most_deprived_quintile, 
+         least_dep = life_expectancy_in_least_deprived_quintile) %>%
+  mutate(abs = abs(abs_gap)) 
+
+seg_wide_ne <- seg_wide %>%
+               filter(geography %in% ne_areas)
+seg_plot <- seg_wide %>%
+  ggplot(aes(most_dep, ratio)) +
+  geom_point(colour = "grey") +
+  geom_point(aes(most_dep, ratio), data = seg_wide_ne, colour = "red") +
+  ggrepel::geom_text_repel(data = seg_wide_ne, aes(most_dep, ratio, label = geography), size = 4) +
+  theme_bw() +
+  geom_smooth(method = "lm", se = FALSE, lty = "dotted", colour = "black", lwd = 0.8) +
+  facet_wrap(~gender)
+
+
+seg_model 
+
+library(rstanarm)
+
+mod <- lm(ratio ~ most_dep + gender, data = seg_wide) 
+summary(mod)
+
+plot(mod, select = 1)
+
+broom::tidy(mod)
+
+seg_fitted <- broom::augment(mod, seg_wide) 
+
+seg_fitted %>%
+  ggplot(aes(ratio, .resid)) +
+  geom_point(colour = "grey") +
+  geom_smooth(colour = "black", method = "lm") +
+  geom_point(aes(ratio, .resid), data = seg_fitted %>% filter(geography == "Stockton-on-Tees"), colour = "goldenrod", size = 3)  +
+  facet_wrap(~gender) +
+  theme_bw()
+```
+
+\

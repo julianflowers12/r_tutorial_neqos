@@ -1,0 +1,50 @@
+---
+title: "Untitled"
+author: "Julian Flowers"
+date: "03/01/2022"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Getting started
+
+-   Install R
+
+-   Install RStudio
+
+-   ~~Set up a Github account~~
+
+## Base R vs. the 'Tidyverse'
+
+-   \[ \] Base R
+
+```{=html}
+<!-- -->
+```
+-   \[ \] R
+-   \[ \] Bullet 3
+
+```{=html}
+<!-- -->
+```
+    code block
+    here::here()
+
+## Three lines of code to get started
+
+```{r cars, echo = TRUE}
+if(!require("pacman"))install.packages("pacman")  ## install the pacman package if you don't already have it
+library(pacman)                                   ## load the package into R
+p_load(tidyverse)                                 ## use `pacman` to donwload, install and load the `tidyverse` (metapackage)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
+==highlighted text ==

@@ -36,9 +36,28 @@ path <- here("data")
 
 df_sheets <- ods_sheets(paste0(path, "/EMData.ods"))
 
+df_england <- read_ods(paste0(path, "/EMData.ods"), sheet = "England")
+
 
 df_region <- read_ods(paste0(path, "/EMData.ods"), sheet = "region")
 ```
+
+
+```{r}
+
+df_england <- df_england %>%
+  mutate(ratio = `Registered Deaths` / `Expected Deaths`, 
+         covid_xs = 100 * abs(`Deaths with COVID-19 on the Death Certificate` / `Registered Deaths`)) %>%
+  as_tibble()
+
+df_england %>%
+  summarise_if(is.numeric, ~(sum(.x)))
+
+
+```
+
+
+
 
 ```{r}
 df_region %>%

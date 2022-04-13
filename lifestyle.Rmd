@@ -1,0 +1,89 @@
+---
+title: "Healthy lifestyles"
+author: "Julian Flowers"
+date: "04/02/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, fingertipsR, sparkline, flextable, formattable, gt)
+
+```
+
+## Summary dashboard
+
+```{r}
+
+dat <- fingertips_data(ProfileID = 19, AreaTypeID = 6)
+skimr::skim(dat)
+
+inds1 <- dat %>%
+  pluck("IndicatorName") %>%
+  unique() %>%
+  .[c(20, 65, 66, 89, 114, 94)]
+
+inds_a <- dat %>%
+  filter(IndicatorName %in% inds1)
+
+inds_b <- fingertips_data(IndicatorID = c(93764, 90280, 93763, 93015, 93088), AreaTypeID = 6)
+
+inds_b$IndicatorName
+
+inds <- inds_a %>%
+  bind_rows(inds_b)
+
+inds %>%
+  filter
+```
+
+```{r}
+
+
+inds_latest <- inds %>%
+  group_by(IndicatorID, IndicatorName, Age, Sex) %>%
+  filter(TimeperiodSortable == max(TimeperiodSortable))
+
+age_bands <- inds_latest$Age %>%
+  unique()
+
+areas <- inds_latest$AreaName %>%
+  unique()
+
+inds_trend <- inds %>%
+  group_by(IndicatorID, IndicatorName, Age, Sex) %>%
+  select(AreaName, TimeperiodSortable, Value) %>%
+  nest()
+
+inds_trend <- inds_trend %>%
+  filter(Sex == "Persons", 
+         Age %in% c("18+ yrs", "19+ yrs", "All ages"))
+
+inds_trend %>%
+  unnest("data") %>%
+  filter(AreaName == areas[2])
+
+inds_latest <- inds_latest %>%
+  select(IndicatorID, IndicatorName, AreaCode, AreaName, Value, Timeperiod) %>%
+  mutate(mean = mean(Value), 
+         rank = rank(Value, ties.method = "first"))
+
+
+
+inds_latest %>%
+  filter(Age %in% c(age_bands[28], age_bands[1]), 
+         Sex == "Persons", 
+         AreaName == areas[2]) %>%
+  ungroup() %>%
+  select(Indicator = IndicatorName, `Time period` = Timeperiod, `North East value` = Value, `North East rank` = rank, `National Average` = mean) %>%
+  gt::gt()
+  flextable(cwidth = 12)
+  
+
+
+
+
+
+```

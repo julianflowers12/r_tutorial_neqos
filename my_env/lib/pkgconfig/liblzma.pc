@@ -1,0 +1,19 @@
+#
+# Author: Lasse Collin
+#
+# This file has been put into the public domain.
+# You can do whatever you want with this file.
+#
+
+prefix=/Users/julianflowers/Dropbox/Mac (2)/Desktop/r_tutorial_neqos/my_env
+exec_prefix=/Users/julianflowers/Dropbox/Mac (2)/Desktop/r_tutorial_neqos/my_env
+libdir=/Users/julianflowers/Dropbox/Mac (2)/Desktop/r_tutorial_neqos/my_env/lib
+includedir=/Users/julianflowers/Dropbox/Mac (2)/Desktop/r_tutorial_neqos/my_env/include
+
+Name: liblzma
+Description: General purpose data compression library
+URL: https://tukaani.org/xz/
+Version: 5.2.5
+Cflags: -I${includedir}
+Libs: -L${libdir} -llzma
+Libs.private: -pthread -lpthread

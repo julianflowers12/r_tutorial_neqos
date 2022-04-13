@@ -1,0 +1,11 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/852774/cd9b1164a7934a0e8b356ef1904d4c0f
+bundleId: https://api.rpubs.com/api/v1/document/852774/cd9b1164a7934a0e8b356ef1904d4c0f
+url: http://rpubs.com/jflowers/852774
+when: 1641406501.46389
+lastSyncTime: 1641406501.4639

@@ -1,0 +1,200 @@
+{
+  "build": "pyh44b312d_0",
+  "build_number": 0,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "constrains": [],
+  "depends": [
+    "python"
+  ],
+  "extracted_package_dir": "/Users/julianflowers/Library/r-miniconda/pkgs/shellingham-1.4.0-pyh44b312d_0",
+  "features": "",
+  "files": [
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/INSTALLER",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/LICENSE",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/METADATA",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/RECORD",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/REQUESTED",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/WHEEL",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/direct_url.json",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/top_level.txt",
+    "lib/python3.6/site-packages/shellingham-1.4.0.dist-info/zip-safe",
+    "lib/python3.6/site-packages/shellingham/__init__.py",
+    "lib/python3.6/site-packages/shellingham/_core.py",
+    "lib/python3.6/site-packages/shellingham/nt.py",
+    "lib/python3.6/site-packages/shellingham/posix/__init__.py",
+    "lib/python3.6/site-packages/shellingham/posix/_core.py",
+    "lib/python3.6/site-packages/shellingham/posix/proc.py",
+    "lib/python3.6/site-packages/shellingham/posix/ps.py",
+    "lib/python3.6/site-packages/shellingham/__pycache__/__init__.cpython-36.pyc",
+    "lib/python3.6/site-packages/shellingham/__pycache__/_core.cpython-36.pyc",
+    "lib/python3.6/site-packages/shellingham/__pycache__/nt.cpython-36.pyc",
+    "lib/python3.6/site-packages/shellingham/posix/__pycache__/__init__.cpython-36.pyc",
+    "lib/python3.6/site-packages/shellingham/posix/__pycache__/_core.cpython-36.pyc",
+    "lib/python3.6/site-packages/shellingham/posix/__pycache__/proc.cpython-36.pyc",
+    "lib/python3.6/site-packages/shellingham/posix/__pycache__/ps.cpython-36.pyc"
+  ],
+  "fn": "shellingham-1.4.0-pyh44b312d_0.tar.bz2",
+  "license": "ISC (ISCL)",
+  "link": {
+    "source": "/Users/julianflowers/Library/r-miniconda/pkgs/shellingham-1.4.0-pyh44b312d_0",
+    "type": 1
+  },
+  "md5": "437655338696f9d0dfdb0a024e66b255",
+  "name": "shellingham",
+  "noarch": "python",
+  "package_tarball_full_path": "/Users/julianflowers/Library/r-miniconda/pkgs/shellingham-1.4.0-pyh44b312d_0.tar.bz2",
+  "package_type": "noarch_python",
+  "paths_data": {
+    "paths": [
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/LICENSE",
+        "path_type": "hardlink",
+        "sha256": "f388fd38cad13112c1dc0f669bbe80e7f84541edbafb72f3030d2ca7642c3c9d",
+        "sha256_in_prefix": "f388fd38cad13112c1dc0f669bbe80e7f84541edbafb72f3030d2ca7642c3c9d",
+        "size_in_bytes": 751
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "9f7a56ee366cb79f6832aef15cb1d211105864a139a10777bc9f7202b1b36493",
+        "sha256_in_prefix": "9f7a56ee366cb79f6832aef15cb1d211105864a139a10777bc9f7202b1b36493",
+        "size_in_bytes": 3557
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "18076f2b94a75720ace4b940eeded76fb6dc0655a38e8ade405baaf18d0b8bcf",
+        "sha256_in_prefix": "18076f2b94a75720ace4b940eeded76fb6dc0655a38e8ade405baaf18d0b8bcf",
+        "size_in_bytes": 1710
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "67e9f2629c2b712ab17ddbb1e4c6e7fc3439db988fec9d831b72601af398c934",
+        "sha256_in_prefix": "67e9f2629c2b712ab17ddbb1e4c6e7fc3439db988fec9d831b72601af398c934",
+        "size_in_bytes": 110
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "46879f7ff647ab5745cd269a700b8843f26a9861def03506a7fa16dccc348f8a",
+        "sha256_in_prefix": "46879f7ff647ab5745cd269a700b8843f26a9861def03506a7fa16dccc348f8a",
+        "size_in_bytes": 107
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/top_level.txt",
+        "path_type": "hardlink",
+        "sha256": "b8a3102f900ac4f8b83bdfd16ddf37f10784b38226a4640a35b103658aa00609",
+        "sha256_in_prefix": "b8a3102f900ac4f8b83bdfd16ddf37f10784b38226a4640a35b103658aa00609",
+        "size_in_bytes": 12
+      },
+      {
+        "_path": "site-packages/shellingham-1.4.0.dist-info/zip-safe",
+        "path_type": "hardlink",
+        "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+        "sha256_in_prefix": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+        "size_in_bytes": 2
+      },
+      {
+        "_path": "site-packages/shellingham/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "9cdadb8242fd16c93e48c9be9851bc2c7646ed47089a712b2e480dc72593dae1",
+        "sha256_in_prefix": "9cdadb8242fd16c93e48c9be9851bc2c7646ed47089a712b2e480dc72593dae1",
+        "size_in_bytes": 636
+      },
+      {
+        "_path": "site-packages/shellingham/_core.py",
+        "path_type": "hardlink",
+        "sha256": "86c41feb4be18962d767e4667ceb11b9bf18d9996cd48dfc26778b88c710ebed",
+        "sha256_in_prefix": "86c41feb4be18962d767e4667ceb11b9bf18d9996cd48dfc26778b88c710ebed",
+        "size_in_bytes": 294
+      },
+      {
+        "_path": "site-packages/shellingham/nt.py",
+        "path_type": "hardlink",
+        "sha256": "9ba27a4aec32a95565c574fd05cfbd17fd71f93e6ed2008516b4401762c891e8",
+        "sha256_in_prefix": "9ba27a4aec32a95565c574fd05cfbd17fd71f93e6ed2008516b4401762c891e8",
+        "size_in_bytes": 4516
+      },
+      {
+        "_path": "site-packages/shellingham/posix/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "7f1f253a0fbb5ad669847f3572d2600cccad816350fa58ef30d9baf3b0aab0eb",
+        "sha256_in_prefix": "7f1f253a0fbb5ad669847f3572d2600cccad816350fa58ef30d9baf3b0aab0eb",
+        "size_in_bytes": 2784
+      },
+      {
+        "_path": "site-packages/shellingham/posix/_core.py",
+        "path_type": "hardlink",
+        "sha256": "fefd7c51a5dbcebe26b8d86bdfe987d4575276367f74e5d0aed532a2621b2984",
+        "sha256_in_prefix": "fefd7c51a5dbcebe26b8d86bdfe987d4575276367f74e5d0aed532a2621b2984",
+        "size_in_bytes": 81
+      },
+      {
+        "_path": "site-packages/shellingham/posix/proc.py",
+        "path_type": "hardlink",
+        "sha256": "dffeae2993dc9f1ef294bfba76321df10b792bb37d85fb8d54e95a7e82b81d06",
+        "sha256_in_prefix": "dffeae2993dc9f1ef294bfba76321df10b792bb37d85fb8d54e95a7e82b81d06",
+        "size_in_bytes": 2109
+      },
+      {
+        "_path": "site-packages/shellingham/posix/ps.py",
+        "path_type": "hardlink",
+        "sha256": "cf1048d9119261e13d535a473dfb2f2990275261a85bcbddf83464c735d55929",
+        "sha256_in_prefix": "cf1048d9119261e13d535a473dfb2f2990275261a85bcbddf83464c735d55929",
+        "size_in_bytes": 1573
+      },
+      {
+        "_path": "lib/python3.6/site-packages/shellingham/__pycache__/__init__.cpython-36.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.6/site-packages/shellingham/__pycache__/_core.cpython-36.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.6/site-packages/shellingham/__pycache__/nt.cpython-36.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.6/site-packages/shellingham/posix/__pycache__/__init__.cpython-36.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.6/site-packages/shellingham/posix/__pycache__/_core.cpython-36.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.6/site-packages/shellingham/posix/__pycache__/proc.cpython-36.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.6/site-packages/shellingham/posix/__pycache__/ps.cpython-36.pyc",
+        "path_type": "pyc_file"
+      }
+    ],
+    "paths_version": 1
+  },
+  "requested_spec": "None",
+  "sha256": "7d79f4500b4267414a2bd6a08e74aedc1629feb890efec71b0480501d37f148a",
+  "size": 11429,
+  "subdir": "noarch",
+  "timestamp": 1612179684174,
+  "track_features": "",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/shellingham-1.4.0-pyh44b312d_0.tar.bz2",
+  "version": "1.4.0"
+}

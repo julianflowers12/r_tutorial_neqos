@@ -1,0 +1,247 @@
+---
+title: "Session 1"
+subtitle: "S"
+author: "Julian Flowers"
+date: "03-01-2022 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    self-contained: true
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+library(xaringan)
+```
+
+class:  left, top
+
+# Getting Started
+
+* Install R from https://www.r-project.org/   
+* Install latest version of RStudio IDE<sup>1</sup>    from https://www.rstudio.com/products/rstudio/download/
+
+## Optional
+
+* Set up a Github account e.g. https://github.com/julianflowers12
+* Set up an RPubs account https://rpubs.com/users/new
+* Open a browser with Google
+* Open a browser with Stack Overflow
+
+
+.footnote[
+[1] Integrated development environment
+]
+
+---
+
+### Power of R
+- Ecosystems
+    + Modeling
+    + Machine learning
+    + Text mining
+    + Data wrangling
+    + GIS
+    
+- Interactivity
+    + Charts
+    + Animation
+    + Web apps
+    + Dashboards
+  
+- Rapid implementation of cutting edge analytical tools
+
+- Making best use of tech
+  + Memory
+  + Parallel processing
+  + Cloud 
+
+- Reproducibility
+
+---
+
+### Key ideas
+
+* Tidy data and data wrangling
+* End-to-end
+* Automation
+* Reproducibility
+* Open
+  + Data
+  + Source
+  + Code
+* Sharing
+
+--- 
+
+### R difficulties
+
+* Multiple ways of achieving same result
+* Dependencies
+* Learning curve
+
+
+
+---
+
+## Some basics
+
+- Usually need to add packages
+    + `install.packages("package name")`
+    
+- First lines of code
+    + `install.packages("pacman")`        ## download and install a universal package manager
+    + `library(pacman)`                   ## load into R
+    + `p_load(tidyverse)`                 ## install and load `tidyverse` - more later 
+    
+```{r}
+install.packages("pacman", repos = "https://cran.rstudio.com" )
+library(pacman)
+p_load(tidyverse, viridis, gganimate, tweenr)
+```
+
+
+
+
+    
+---
+### Examples
+
+- In the code chunk below:
+    + We are reading in data from the Coronavirus Dashboard API as a csv file via `read_csv()`
+    + (Dataset is daily test positivity by lower tier LA)
+    + We are using the `head()` function to show the first 6 data rows of data `df1`
+    + We are using the *pipe* function `%>%` 
+    + Data is a *data frame*  - in this case a `tibble`
+
+```{r}
+df1 <- read_csv("https://api.coronavirus.data.gov.uk/v2/data?areaType=ltla&metric=uniqueCasePositivityBySpecimenDateRollingSum&format=csv", show_col_types = FALSE)
+df1 %>%
+  head()
+```
+
+
+---
+### Lets plot some of the data
+
+```{r fig.height=4}
+df1 %>% filter(str_detect(areaName, "Leeds")) %>% ## filter row-wise; `str_detect` is a good strategy for filtering among large numbers of text categories
+  ggplot(aes(date, uniqueCasePositivityBySpecimenDateRollingSum)) +
+  geom_line(colour = "darkblue") +
+  geom_smooth(method = "loess", span = .3) +
+  labs(title = "Test positivity") + theme(plot.title.position = "plot")
+
+
+```
+---
+
+### Further plots
+```{r, echo = FALSE}
+
+df1 %>% 
+  filter(date == max(date)) %>%
+  ggplot(aes(uniqueCasePositivityBySpecimenDateRollingSum)) +
+  geom_density() +
+  labs(title = "Distribution: test positivity") + theme(plot.title.position = "plot")
+
+
+```
+
+---
+
+class: left, top
+
+### Map code
+
+
+```{r, echo=FALSE}
+
+library(tmap); library(sf)
+
+## We'll download a shape file for ltla boundaries from ONS geography portal
+
+s2020 <- "https://opendata.arcgis.com/datasets/69d8b52032024edf87561fb60fe07c85_0.geojson"
+
+shp2020 <- st_read(s2020, quiet = T)  ## read shape file
+
+shp2020 <- filter(shp2020, str_detect(LAD20CD, "^E"))
+
+shp2020 <- shp2020 %>% left_join(df1, by = c("LAD20CD" = "areaCode"))
+
+```
+
+```
+library(tmap); library(sf)
+
+s2020 <- "https://opendata.arcgis.com/datasets/69d8b52032024edf87561fb60fe07c85_0.geojson"
+
+shp2020 <- st_read(s2020, quiet = T)  ## read shape file
+
+shp2020 <- filter(shp2020, str_detect(LAD20CD, "^E"))
+
+shp2020 <- shp2020 %>% left_join(df1, by = c("LAD20CD" = "areaCode"))
+
+shp2020_nov <- filter(shp2020, date >= "2021-12-01")
+
+g <- ggplot(shp2020_nov) +
+  geom_sf(aes(fill = uniqueCasePositivityBySpecimenDateRollingSum, 
+  colour = uniqueCasePositivityBySpecimenDateRollingSum) )+
+  coord_sf() +
+  scale_fill_viridis(direction = -1, name = "Test positivity (%)", 
+  option = "inferno") +
+  scale_colour_viridis(direction = -1, name = "Test positivity (%)", 
+  option = "inferno") +
+  theme_void() +
+  facet_wrap(~date, ncol = 8) 
+
+g
+
+```
+
+---
+
+### Map
+```{r echo=F, fig.height=8, fig.width=12}
+
+shp2020_nov <- filter(shp2020, date >= "2021-12-01")
+
+g <- ggplot(shp2020_nov) +
+  geom_sf(aes(fill = uniqueCasePositivityBySpecimenDateRollingSum, colour = uniqueCasePositivityBySpecimenDateRollingSum) )+
+  coord_sf() +
+  scale_fill_viridis(direction = 1, name = "Test positivity (%)", option = "turbo") +
+  scale_colour_viridis(direction = 1, name = "Test positivity (%)", option = "turbo") +
+  theme_void() +
+  facet_wrap(~date, ncol = 8) 
+
+g
+
+```
+
+
+---
+### Small multiples
+
+
+```{r, echo=FALSE, results="hide"}
+
+ p <- df1 %>% filter(str_detect(areaCode, "E09")) %>% ## filter row-wise; `str_detect` is a good strategy for filtering among large numbers of text categories - filter for London LAs
+  ggplot(aes(date, uniqueCasePositivityBySpecimenDateRollingSum)) +
+  geom_line(colour = "darkblue") +
+  #geom_smooth(method = "loess", span = .3) +
+  labs(title = "Test positivity") + theme(plot.title.position = "plot") 
+```
+
+```{r}
+p + facet_wrap(~areaName, ncol = 8)
+
+```
+
+
+---
+
+
