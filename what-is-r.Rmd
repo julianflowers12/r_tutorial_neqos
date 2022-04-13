@@ -54,7 +54,7 @@ p_load(tidyverse)
 * Download and install:
     + [R (latest version 4.1.2)](https://cran.r-project.org/src/base/R-4/)
     + [RTools (v4) if running on Windows](https://cran.r-project.org/bin/windows/Rtools/rtools40.html)
-    + [RStudio IDE](https://www.rstudio.com/products/rstudio/download/#download) (latest is RStudio Desktop 2021.09.1+372)
+    + [RStudio IDE](https://www.rstudio.com/products/rstudio/download/#download) (latest is RStudio Desktop 2022.02.1+461)
     
 * Set up a Github account
       + Version control system
